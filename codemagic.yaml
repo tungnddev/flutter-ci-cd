@@ -1,0 +1,109 @@
+workflows:
+  androidStaging:
+    name: Android Staging Workflow
+#    triggering:
+#      events:
+#        - pull_request
+#        - push
+#      branch_patterns:
+#        - pattern: release/*
+#      cancel_previous_builds: true
+    cache:
+      cache_paths:
+        - $HOME/Library/Caches/CocoaPods
+        - $FLUTTER_ROOT/.pub-cache
+        - $HOME/.gradle/caches
+    max_build_duration: 60
+    environment:
+      flutter: 3.3.3
+      groups:
+        - greaper
+    scripts:
+      - echo $ENV_ANDROID_STAGING | base64 --decode > $CM_BUILD_DIR/android/fastlane/.env.staging
+      - gem install bundler:1.17.2
+      - |
+        cd android
+        bundle install
+        bundle exec fastlane deploy --env staging
+    artifacts:
+      - build/app/outputs/bundle/**/*.aab
+      - build/app/outputs/flutter-apk/*.apk
+
+  androidProduction:
+    name: Android Production Workflow
+    cache:
+      cache_paths:
+        - $HOME/Library/Caches/CocoaPods
+        - $FLUTTER_ROOT/.pub-cache
+        - $HOME/.gradle/caches
+    triggering:
+      events:
+        - tag
+      cancel_previous_builds: false
+    max_build_duration: 60
+    environment:
+      flutter: 3.3.3
+      groups:
+        - greaper
+    scripts:
+      - echo $ENV_ANDROID_PRODUCTION | base64 --decode > $CM_BUILD_DIR/android/fastlane/.env.production
+      - gem install bundler:1.17.2
+      - |
+        cd android
+        bundle install
+        bundle exec fastlane deploy --env production
+    artifacts:
+      - build/app/outputs/bundle/**/*.aab
+      - build/app/outputs/flutter-apk/*.apk
+
+  iosStaging:
+    name: iOS Staging workflow
+    cache:
+      cache_paths:
+        - $HOME/Library/Caches/CocoaPods
+        - $FLUTTER_ROOT/.pub-cache
+        - $HOME/.gradle/caches
+    max_build_duration: 60
+    environment:
+      flutter: 3.3.3
+      xcode: 14.2
+      cocoapods: 1.11.3
+      ruby: 2.7.6
+      groups:
+        - greaper
+    scripts:
+      - echo $ENV_IOS_STAGING | base64 --decode > $CM_BUILD_DIR/ios/fastlane/.env.staging
+      - gem install bundler:1.17.2
+      - ruby -v
+      - |
+        cd ios
+        bundle install
+        fastlane deploy --env staging
+    artifacts:
+      - build/ios/ipa/*.ipa
+
+  iosProduction:
+    name: iOS Production workflow
+    cache:
+      cache_paths:
+        - $HOME/Library/Caches/CocoaPods
+        - $FLUTTER_ROOT/.pub-cache
+        - $HOME/.gradle/caches
+    max_build_duration: 60
+    environment:
+      flutter: 3.3.3
+      xcode: 14.2
+      cocoapods: 1.11.3
+      ruby: 2.7.6
+      groups:
+        - greaper
+    scripts:
+      - echo $ENV_IOS_PRODUCTION | base64 --decode > $CM_BUILD_DIR/ios/fastlane/.env.production
+      - gem install bundler:1.17.2
+      - ruby -v
+      - |
+        cd ios
+        bundle install
+        fastlane deploy --env production
+    artifacts:
+      - build/ios/ipa/*.ipa

@@ -1,0 +1,4 @@
+git_url("https://gitlab.com/cyhome-mobile1/cyhome-mobile-ios-certificates")
+
+storage_mode("git")
+

@@ -1,0 +1,78 @@
+default_platform(:ios)
+
+platform :ios do
+
+  desc "Submit a new build to App Store"
+    lane :deploy do
+      prepareForBuild(match_type: "appstore")
+      buildIpa
+      deployToAppStore
+    end
+
+  lane :prepareForBuild do |options|
+    xcversion(version: "14.2")
+    create_keychain(
+      name: ENV['MATCH_KEYCHAIN_NAME'],
+      password: ENV['MATCH_KEYCHAIN_PASSWORD'],
+      default_keychain: true,
+      unlock: true,
+      timeout: 3600,
+      lock_when_sleeps: false
+    )
+    sync_code_signing(type: options[:match_type], readonly: true, app_identifier: ENV['APP_IDS'], git_branch: ENV['MATCH_BRANCH'])
+    increment_build_number_in_plist(build_number: Time.now.to_i.to_s, target: "Runner")
+  end
+
+  lane :buildIpa do
+    sh('echo $EXPORT_OPTIONS > ExportOptions.plist')
+    envName = ENV['NAME']
+    Dir.chdir("../../") do
+      sh("flutter doctor -v")
+      sh("flutter pub get")
+      sh("flutter pub run build_runner build")
+      sh("flutter gen-l10n")
+      sh("flutter build ipa -v --flavor #{envName} -t lib/main_#{envName}.dart --export-options-plist=ios/fastlane/ExportOptions.plist")
+    end
+  end
+
+  lane :deployToAppStore do
+    if !ENV['APP_STORE_KEY'].nil?
+        # must be ch because firebase_app_distribution start path from fastlane/, but fastlane start path from fastlane/Fastfile
+        ipaPath = ""
+        Dir.chdir("../") do
+            ipaPath = Dir["../build/ios/ipa/*.ipa"].last
+        end
+        sh('echo $APP_STORE_KEY > appstore_key.json')
+      	upload_to_testflight(
+            api_key_path: "fastlane/appstore_key.json",
+            ipa: ipaPath,
+            changelog: git_branch
+        )
+    end
+  end
+
+  lane :deployToFirebase do
+    if !ENV['FIREBASE_APP'].nil?
+      ipaPath = ""
+      Dir.chdir("../") do
+        ipaPath = Dir["../build/ios/ipa/*.ipa"].last
+      end
+      firebase_app_distribution(
+        app: ENV['FIREBASE_APP'],
+        firebase_cli_token: ENV['FIREBASE_TOKEN'],
+        release_notes: git_branch,
+        ipa_path: ipaPath
+      )
+    end
+  end
+
+  lane :test do
+    begin
+      if ENV['NAME'] == "staging"
+        sh("echo staging")
+      end
+    rescue => ex
+        UI.error(ex)
+    end
+  end
+end

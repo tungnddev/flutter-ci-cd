@@ -1,0 +1,80 @@
+default_platform(:android)
+
+platform :android do
+
+  desc "Submit a new new Build to Firebase"
+    lane :deploy do
+      prepareBuild
+      if ENV['NAME'] == "production"
+        buildBundle
+        deployToPlayStore
+      else
+        buildApk
+        deployToFirebase
+      end
+    end
+
+  lane :prepareBuild do
+    Dir.chdir("../../") do
+      sh("flutter doctor -v")
+      sh("flutter pub get")
+      sh("flutter pub run build_runner build")
+      sh("flutter gen-l10n")
+    end
+  end
+
+  lane :buildApk do
+    envName = ENV['NAME']
+    sh("flutter build apk --flavor #{envName} -t lib/main_#{envName}.dart")
+  end
+
+  lane :buildBundle do
+    envName = ENV['NAME']
+    sh("flutter build appbundle --flavor #{envName} -t lib/main_#{envName}.dart")
+  end
+
+  lane :deployToFirebase do
+    if !ENV['FIREBASE_APP'].nil?
+      apkPath = ""
+      Dir.chdir("../") do
+        apkPath = Dir["../build/app/outputs/flutter-apk/*.apk"].last
+      end
+      firebase_app_distribution(
+        app: ENV['FIREBASE_APP'],
+        firebase_cli_token: ENV['FIREBASE_TOKEN'],
+        release_notes: git_branch,
+        android_artifact_path: apkPath
+      )
+    end
+  end
+
+  lane :deployToPlayStore do
+    if !ENV['FASTLANE_SUPPLY'].nil?
+      aabPath = ""
+      Dir.chdir("../") do
+        aabPath = Dir["../build/app/outputs/bundle/#{ENV['NAME']}Release/*.aab"].last
+      end
+      sh('echo $FASTLANE_SUPPLY > fastlane_supply.json')
+      upload_to_play_store(
+        package_name: ENV['PACKAGE_NAME'],
+        release_status: "draft",
+        track: "beta",
+        json_key: "fastlane/fastlane_supply.json",
+        aab: aabPath,
+        skip_upload_metadata: true,
+        skip_upload_changelogs: true,
+        skip_upload_images: true,
+        skip_upload_screenshots: true
+      )
+    end
+  end
+
+  lane :test do
+    begin
+      changelog = git_branch + " " + last_git_commit[:message]
+    rescue => ex
+        UI.error(ex)
+    end
+  end
+end
+
