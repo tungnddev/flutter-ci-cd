@@ -1,0 +1,4 @@
+APP_NAME = Flutter CI CD Staging
+PRODUCT_BUNDLE_IDENTIFIER = com.greaper.fluttercicd.staging
+ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon
+APP_SCHEME = greaper-staging
