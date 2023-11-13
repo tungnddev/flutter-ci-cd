@@ -1,16 +1,10 @@
-# flutter_ci_cd
+## Flutter CI/CD
 
-A new Flutter project.
+Sample app fop CI/CD Flutter with Fastlane, Code magic, Build Flavors and more
 
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### Usage
+* Install Flutter 3.3.3
+* Run `flutter pub get` to get and sync all library
+* Run `flutter pub run build_runner build` to generate all models flow json
+* Run `flutter pub run gen-l10n` to generate files language
+* Run on device by flavor (`staging`/`production`) `flutter run -t lib/main.{flavor} --flavor {flavor}`
